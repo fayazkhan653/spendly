@@ -79,3 +79,17 @@ def seed_db():
             sample_expenses
         )
         conn.commit()
+
+def create_user(name, email, password_hash):
+    """
+    Creates a new user in the database.
+    Returns the new user's ID.
+    Raises sqlite3.IntegrityError if email is not unique.
+    """
+    with get_db() as conn:
+        cursor = conn.execute(
+            "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+            (name, email, password_hash)
+        )
+        conn.commit()
+        return cursor.lastrowid
