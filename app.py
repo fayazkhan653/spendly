@@ -17,6 +17,8 @@ with app.app_context():
 
 @app.route("/")
 def landing():
+    if session.get("user_id"):
+        return redirect(url_for("profile"))
     return render_template("landing.html")
 
 
@@ -43,8 +45,9 @@ def register():
 
         try:
             create_user(name, email, hashed_password)
-            flash("Account created successfully! Please log in.", "success")
-            return redirect(url_for("login"))
+            session["user_id"] = get_user_by_email(email)["id"]
+            flash("Account created successfully! Welcome to Spendly.", "success")
+            return redirect(url_for("profile"))
         except sqlite3.IntegrityError:
             flash("An account with this email already exists.", "error")
             return render_template("register.html")
@@ -72,7 +75,7 @@ def login():
         if user and check_password_hash(user["password_hash"], password):
             session["user_id"] = user["id"]
             flash("Welcome back!", "success")
-            return redirect(url_for("landing"))
+            return redirect(url_for("profile"))
 
         flash("Invalid email or password.", "error")
         return render_template("login.html")
@@ -97,13 +100,45 @@ def privacy():
 @app.route("/logout")
 def logout():
     session.clear()
-    flash("You have been logged out.", "success")
     return redirect(url_for("landing"))
 
 
 @app.route("/profile")
 def profile():
-    return "Profile page — coming in Step 4"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    # Hardcoded data for Step 4 UI design
+    user = {
+        "name": "Demo User",
+        "email": "demo@spendly.com",
+        "member_since": "September 2026",
+        "initials": "DU"
+    }
+    stats = {
+        "total_spent": "₹ 2,450.00",
+        "transaction_count": 12,
+        "top_category": "Food"
+    }
+    transactions = [
+        {"date": "2026-09-20", "desc": "Grocery Store", "cat": "Food", "amt": "₹ 450.00"},
+        {"date": "2026-09-18", "desc": "Uber Ride", "cat": "Transport", "amt": "₹ 120.00"},
+        {"date": "2026-09-15", "desc": "Netflix", "cat": "Entertainment", "amt": "₹ 499.00"},
+        {"date": "2026-09-12", "desc": "Pharmacy", "cat": "Health", "amt": "₹ 300.00"},
+    ]
+    categories = [
+        {"name": "Food", "amount": "₹ 1,200.00", "percent": 49},
+        {"name": "Transport", "amount": "₹ 600.00", "percent": 24},
+        {"name": "Entertainment", "amount": "₹ 650.00", "percent": 27},
+    ]
+
+    return render_template(
+        "profile.html",
+        user=user,
+        stats=stats,
+        transactions=transactions,
+        categories=categories
+    )
 
 
 @app.route("/expenses/add")
