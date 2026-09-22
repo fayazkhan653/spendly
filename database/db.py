@@ -116,33 +116,52 @@ def create_user(name, email, password_hash):
         conn.commit()
         return cursor.lastrowid
 
-def get_user_expenses(user_id):
+def _apply_date_filters(where_clause, params, start_date=None, end_date=None):
     """
-    Retrieves all expenses for a specific user, ordered by date descending.
+    Helper to append date filtering to a SQL where clause and its parameters.
+    """
+    if start_date:
+        where_clause += " AND date >= ?"
+        params.append(start_date)
+    if end_date:
+        where_clause += " AND date <= ?"
+        params.append(end_date)
+    return where_clause, params
+
+def get_user_expenses(user_id, start_date=None, end_date=None):
+    """
+    Retrieves expenses for a specific user, optionally filtered by date range,
+    ordered by date descending.
     """
     with get_db() as conn:
-        return conn.execute(
-            "SELECT date, description, category, amount FROM expenses WHERE user_id = ? ORDER BY date DESC",
-            (user_id,)
-        ).fetchall()
+        query = "SELECT date, description, category, amount FROM expenses WHERE user_id = ?"
+        params = [user_id]
 
+        query, params = _apply_date_filters(query, params, start_date, end_date)
 
-def get_user_stats(user_id):
+        query += " ORDER BY date DESC"
+        return conn.execute(query, params).fetchall()
+
+def get_user_stats(user_id, start_date=None, end_date=None):
     """
-    Retrieves summary statistics for a user's expenses.
+    Retrieves summary statistics for a user's expenses, optionally filtered by date range.
     Returns a dictionary with total amount, transaction count, and the top category.
     """
     with get_db() as conn:
+        where_clause = "WHERE user_id = ?"
+        params = [user_id]
+        where_clause, params = _apply_date_filters(where_clause, params, start_date, end_date)
+
         # Query 1: Total spent and count of expenses
         stats_row = conn.execute(
-            "SELECT SUM(amount) as total, COUNT(id) as count FROM expenses WHERE user_id = ?",
-            (user_id,)
+            f"SELECT SUM(amount) as total, COUNT(id) as count FROM expenses {where_clause}",
+            params
         ).fetchone()
 
         # Query 2: Top category by total amount spent
         category_row = conn.execute(
-            "SELECT category FROM expenses WHERE user_id = ? GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
-            (user_id,)
+            f"SELECT category FROM expenses {where_clause} GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
+            params
         ).fetchone()
 
         return {
@@ -151,13 +170,16 @@ def get_user_stats(user_id):
             "top_category": category_row["category"] if category_row else None
         }
 
-def get_category_breakdown(user_id):
+def get_category_breakdown(user_id, start_date=None, end_date=None):
     """
-    Retrieves the total amount spent per category for a specific user.
+    Retrieves the total amount spent per category for a specific user, optionally filtered by date range.
     """
     with get_db() as conn:
-        return conn.execute(
-            "SELECT category, SUM(amount) as total FROM expenses WHERE user_id = ? GROUP BY category",
-            (user_id,)
-        ).fetchall()
+        where_clause = "WHERE user_id = ?"
+        params = [user_id]
+        where_clause, params = _apply_date_filters(where_clause, params, start_date, end_date)
 
+        return conn.execute(
+            f"SELECT category, SUM(amount) as total FROM expenses {where_clause} GROUP BY category",
+            params
+        ).fetchall()

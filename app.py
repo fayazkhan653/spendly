@@ -113,6 +113,10 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
+    # Get filter parameters
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+
     # Get user details
     user = get_user_by_id(session["user_id"])
     if not user:
@@ -126,8 +130,8 @@ def profile():
         "initials": user["name"][:2].upper() if user["name"] else "???"
     }
 
-    # Get real user stats from DB
-    user_stats = get_user_stats(session["user_id"])
+    # Get real user stats from DB with filters
+    user_stats = get_user_stats(session["user_id"], start_date=start_date, end_date=end_date)
 
     total = user_stats["total"]
     count = user_stats["count"]
@@ -139,8 +143,8 @@ def profile():
         "top_category": top_cat if top_cat else "N/A"
     }
 
-    # Get real expenses from DB
-    expense_rows = get_user_expenses(session["user_id"])
+    # Get real expenses from DB with filters
+    expense_rows = get_user_expenses(session["user_id"], start_date=start_date, end_date=end_date)
     transactions = [
         {
             "date": row["date"],
@@ -151,8 +155,8 @@ def profile():
         for row in expense_rows
     ]
 
-    # Get category breakdown and total spend
-    category_rows = get_category_breakdown(session["user_id"])
+    # Get category breakdown and total spend with filters
+    category_rows = get_category_breakdown(session["user_id"], start_date=start_date, end_date=end_date)
     overall_total = sum(row["total"] for row in category_rows)
 
     categories = [
@@ -169,7 +173,9 @@ def profile():
         user=user_data,
         stats=stats,
         transactions=transactions,
-        categories=categories
+        categories=categories,
+        start_date=start_date,
+        end_date=end_date
     )
 
 
