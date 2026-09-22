@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
 from werkzeug.security import generate_password_hash, check_password_hash
-from database.db import get_db, init_db, seed_db, create_user, get_user_by_email, get_user_by_id
+from database.db import get_db, init_db, seed_db, create_user, get_user_by_email, get_user_by_id, get_user_expenses, get_user_stats, get_category_breakdown
 import sqlite3
 
 app = Flask(__name__)
@@ -113,33 +113,60 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
-    # Hardcoded data for Step 4 UI design
-    user = {
-        "name": "Demo User",
-        "email": "demo@spendly.com",
-        "member_since": "September 2026",
-        "initials": "DU"
+    # Get user details
+    user = get_user_by_id(session["user_id"])
+    if not user:
+        abort(404)
+
+    # Format user data for template
+    user_data = {
+        "name": user["name"],
+        "email": user["email"],
+        "member_since": "September 2026", # Simplified for now
+        "initials": user["name"][:2].upper() if user["name"] else "???"
     }
+
+    # Get real user stats from DB
+    user_stats = get_user_stats(session["user_id"])
+
+    total = user_stats["total"]
+    count = user_stats["count"]
+    top_cat = user_stats["top_category"]
+
     stats = {
-        "total_spent": "₹ 2,450.00",
-        "transaction_count": 12,
-        "top_category": "Food"
+        "total_spent": f"₹ {total:.2f}" if total is not None else "₹ 0.00",
+        "transaction_count": count if count is not None else 0,
+        "top_category": top_cat if top_cat else "N/A"
     }
+
+    # Get real expenses from DB
+    expense_rows = get_user_expenses(session["user_id"])
     transactions = [
-        {"date": "2026-09-20", "desc": "Grocery Store", "cat": "Food", "amt": "₹ 450.00"},
-        {"date": "2026-09-18", "desc": "Uber Ride", "cat": "Transport", "amt": "₹ 120.00"},
-        {"date": "2026-09-15", "desc": "Netflix", "cat": "Entertainment", "amt": "₹ 499.00"},
-        {"date": "2026-09-12", "desc": "Pharmacy", "cat": "Health", "amt": "₹ 300.00"},
+        {
+            "date": row["date"],
+            "desc": row["description"],
+            "cat": row["category"],
+            "amt": f"₹ {row['amount']:.2f}"
+        }
+        for row in expense_rows
     ]
+
+    # Get category breakdown and total spend
+    category_rows = get_category_breakdown(session["user_id"])
+    overall_total = sum(row["total"] for row in category_rows)
+
     categories = [
-        {"name": "Food", "amount": "₹ 1,200.00", "percent": 49},
-        {"name": "Transport", "amount": "₹ 600.00", "percent": 24},
-        {"name": "Entertainment", "amount": "₹ 650.00", "percent": 27},
+        {
+            "name": row["category"],
+            "amount": f"₹ {row['total']:.2f}",
+            "percent": int((row["total"] / overall_total) * 100) if overall_total > 0 else 0
+        }
+        for row in category_rows
     ]
 
     return render_template(
         "profile.html",
-        user=user,
+        user=user_data,
         stats=stats,
         transactions=transactions,
         categories=categories
