@@ -80,6 +80,17 @@ def seed_db():
         )
         conn.commit()
 
+def get_user_by_id(user_id):
+    """
+    Retrieves a user by their ID.
+    Returns the user record as a sqlite3.Row or None if not found.
+    """
+    with get_db() as conn:
+        return conn.execute(
+            "SELECT * FROM users WHERE id = ?",
+            (user_id,)
+        ).fetchone()
+
 def get_user_by_email(email):
     """
     Retrieves a user by their email address.
