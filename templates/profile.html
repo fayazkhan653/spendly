@@ -33,6 +33,31 @@
         </div>
     </div>
 
+    <!-- Date Filters -->
+    <div class="filter-container">
+        <div class="preset-grid">
+            <a href="{{ url_for('profile') }}" class="preset-card {% if not start_date and not end_date %}active{% endif %}" id="preset-all">All Time</a>
+            <a href="#" class="preset-card" id="preset-month">This Month</a>
+            <a href="#" class="preset-card" id="preset-3m">Last 3 Months</a>
+            <a href="#" class="preset-card" id="preset-6m">Last 6 Months</a>
+        </div>
+
+        <div class="custom-filter-card">
+            <form method="GET" action="{{ url_for('profile') }}" class="custom-filter-form">
+                <div class="filter-group">
+                    <label for="start_date" class="filter-label">From:</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ start_date or '' }}">
+                </div>
+                <div class="filter-group">
+                    <label for="end_date" class="filter-label">To:</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ end_date or '' }}">
+                </div>
+                <button type="submit" class="filter-btn">Apply Filter</button>
+                <a href="{{ url_for('profile') }}" class="clear-filter">Clear</a>
+            </form>
+        </div>
+    </div>
+
     <!-- Main Content -->
     <div class="profile-grid">
         <!-- Transaction History -->
@@ -44,7 +69,7 @@
                         <th>Date</th>
                         <th>Description</th>
                         <th>Category</th>
-                        <th style="text-align: right;">Amount</th>
+                        <th class="text-right">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,7 +82,7 @@
                                 {{ tx.cat }}
                             </span>
                         </td>
-                        <td style="text-align: right; font-weight: 600;">{{ tx.amt }}</td>
+                        <td class="text-right font-semibold">{{ tx.amt }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -84,3 +109,56 @@
     </div>
 </div>
 {% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        const today = new Date();
+        const todayStr = formatDate(today);
+
+        // This Month
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthLink = document.getElementById('preset-month');
+        if (monthLink) {
+            monthLink.href = `{{ url_for('profile') }}?start_date=${formatDate(firstDayOfMonth)}&end_date=${todayStr}`;
+        }
+
+        // Last 3 Months
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setDate(today.getDate() - 90);
+        const threeMonthLink = document.getElementById('preset-3m');
+        if (threeMonthLink) {
+            threeMonthLink.href = `{{ url_for('profile') }}?start_date=${formatDate(threeMonthsAgo)}&end_date=${todayStr}`;
+        }
+
+        // Last 6 Months
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setDate(today.getDate() - 180);
+        const sixMonthLink = document.getElementById('preset-6m');
+        if (sixMonthLink) {
+            sixMonthLink.href = `{{ url_for('profile') }}?start_date=${formatDate(sixMonthsAgo)}&end_date=${todayStr}`;
+        }
+
+        // Set active state for presets based on URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const start = urlParams.get('start_date');
+        const end = urlParams.get('end_date');
+
+        if (start && end) {
+            const monthStart = formatDate(firstDayOfMonth);
+            if (start === monthStart && end === todayStr) {
+                document.getElementById('preset-month')?.classList.add('active');
+            } else if (start === formatDate(threeMonthsAgo) && end === todayStr) {
+                document.getElementById('preset-3m')?.classList.add('active');
+            } else if (start === formatDate(sixMonthsAgo) && end === todayStr) {
+                document.getElementById('preset-6m')?.classList.add('active');
+            }
+        }
+    });
+</script>
+{% endblock %}
+

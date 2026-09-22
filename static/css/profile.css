@@ -117,6 +117,117 @@
     color: var(--ink-soft);
 }
 
+/* Filter Section */
+.filter-container {
+    margin: 2rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.preset-card {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    text-align: center;
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.preset-card:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+.preset-card.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--paper);
+}
+
+.custom-filter-card {
+    background: var(--paper-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.custom-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    justify-content: center;
+}
+
+.custom-filter-form input {
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.filter-btn {
+    padding: 0.5rem 1.5rem;
+    background: var(--accent);
+    color: var(--paper);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.filter-btn:hover {
+    opacity: 0.9;
+}
+
+.clear-filter {
+    text-decoration: none;
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+    margin-left: 1rem;
+    transition: color 0.2s ease;
+}
+
+.clear-filter:hover {
+    color: var(--ink);
+}
+
+/* Filter Utility Classes */
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+}
+
+.text-right {
+    text-align: right;
+}
+
+.font-semibold {
+    font-weight: 600;
+}
+
 /* Category Badges */
 .badge {
     padding: 0.2rem 0.6rem;
