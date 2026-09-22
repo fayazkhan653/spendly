@@ -115,3 +115,49 @@ def create_user(name, email, password_hash):
         )
         conn.commit()
         return cursor.lastrowid
+
+def get_user_expenses(user_id):
+    """
+    Retrieves all expenses for a specific user, ordered by date descending.
+    """
+    with get_db() as conn:
+        return conn.execute(
+            "SELECT date, description, category, amount FROM expenses WHERE user_id = ? ORDER BY date DESC",
+            (user_id,)
+        ).fetchall()
+
+
+def get_user_stats(user_id):
+    """
+    Retrieves summary statistics for a user's expenses.
+    Returns a dictionary with total amount, transaction count, and the top category.
+    """
+    with get_db() as conn:
+        # Query 1: Total spent and count of expenses
+        stats_row = conn.execute(
+            "SELECT SUM(amount) as total, COUNT(id) as count FROM expenses WHERE user_id = ?",
+            (user_id,)
+        ).fetchone()
+
+        # Query 2: Top category by total amount spent
+        category_row = conn.execute(
+            "SELECT category FROM expenses WHERE user_id = ? GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1",
+            (user_id,)
+        ).fetchone()
+
+        return {
+            "total": stats_row["total"] if stats_row else None,
+            "count": stats_row["count"] if stats_row else 0,
+            "top_category": category_row["category"] if category_row else None
+        }
+
+def get_category_breakdown(user_id):
+    """
+    Retrieves the total amount spent per category for a specific user.
+    """
+    with get_db() as conn:
+        return conn.execute(
+            "SELECT category, SUM(amount) as total FROM expenses WHERE user_id = ? GROUP BY category",
+            (user_id,)
+        ).fetchall()
+
