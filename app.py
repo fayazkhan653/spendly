@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 from werkzeug.security import generate_password_hash, check_password_hash
 from database.db import get_db, init_db, seed_db, create_user, get_user_by_email, get_user_by_id, get_user_expenses, get_user_stats, get_category_breakdown
 import sqlite3
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "spendly_secret_key_for_development"
@@ -182,9 +183,48 @@ def profile():
     )
 
 
-@app.route("/expenses/add")
+from datetime import datetime
+
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        amount = request.form.get("amount")
+        category = request.form.get("category")
+        date = request.form.get("date")
+        description = request.form.get("description")
+
+        if not amount or not category or not date:
+            flash("All required fields are missing.", "error")
+            return render_template("add_expense.html", today=datetime.now().strftime("%Y-%m-%d"))
+
+        try:
+            amount_val = float(amount)
+            if amount_val <= 0:
+                raise ValueError("Amount must be positive.")
+        except ValueError as e:
+            flash(str(e) if "positive" in str(e) else "Invalid amount entered.", "error")
+            return render_template("add_expense.html", today=datetime.now().strftime("%Y-%m-%d"))
+
+        allowed_categories = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
+        if category not in allowed_categories:
+            flash("Invalid category selected.", "error")
+            return render_template("add_expense.html", today=datetime.now().strftime("%Y-%m-%d"))
+
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+        except ValueError:
+            flash("Invalid date format. Please use YYYY-MM-DD.", "error")
+            return render_template("add_expense.html", today=datetime.now().strftime("%Y-%m-%d"))
+
+        from database.db import add_expense as db_add_expense
+        db_add_expense(session["user_id"], amount_val, category, date, description)
+        flash("Expense added successfully!", "success")
+        return redirect(url_for("profile"))
+
+    return render_template("add_expense.html", today=datetime.now().strftime("%Y-%m-%d"))
 
 
 @app.route("/expenses/<int:id>/edit")

@@ -116,6 +116,19 @@ def create_user(name, email, password_hash):
         conn.commit()
         return cursor.lastrowid
 
+def add_expense(user_id, amount, category, date, description):
+    """
+    Adds a new expense for a specific user.
+    """
+    with get_db() as conn:
+        cursor = conn.execute(
+            "INSERT INTO expenses (user_id, amount, category, date, description) VALUES (?, ?, ?, ?, ?)",
+            (user_id, amount, category, date, description)
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
 def _apply_date_filters(where_clause, params, start_date=None, end_date=None):
     """
     Helper to append date filtering to a SQL where clause and its parameters.
